@@ -524,17 +524,29 @@
 
             reader.onload = function (e) {
                 try {
-                    // Đọc file dưới dạng ArrayBuffer để xử lý binary
-                    const arrayBuffer = e.target.result;
-                    const uintArray = new Uint8Array(arrayBuffer);
-                    const inputData = Array.from(uintArray);
+                    const content = e.target.result;
+
+                    // Detect if the content is hex-encoded
+                    let inputData;
+                    if (/^([0-9a-fA-F]{2}\s*)+$/.test(content.trim())) {
+                        inputData = content.trim().split(/\s+/).map(b => parseInt(b, 16));
+                    } else {
+                        const arrayBuffer = e.target.result;
+                        const uintArray = new Uint8Array(arrayBuffer);
+                        inputData = Array.from(uintArray);
+                    }
 
                     const startTime = performance.now();
                     fileResult = aesDecrypt(inputData, key);
                     const endTime = performance.now();
 
-                    // Hiển thị kết quả
+                    // Validate decrypted content
                     const textPreview = String.fromCharCode(...fileResult.slice(0, 200));
+                    if (!textPreview.trim()) {
+                        throw new Error('Nội dung giải mã không hợp lệ hoặc bị lỗi.');
+                    }
+
+                    // Display results
                     document.getElementById('fileStatus').textContent = `Đã giải mã (${fileResult.length} bytes)`;
                     document.getElementById('fileTime').textContent = (endTime - startTime).toFixed(2);
                     document.getElementById('filePreview').textContent =
@@ -543,11 +555,11 @@
                 } catch (e) {
                     alert('Giải mã thất bại: ' + e.message);
                     document.getElementById('fileStatus').textContent = 'Lỗi khi giải mã';
+                    document.getElementById('filePreview').textContent = '';
                 }
             };
 
-            // Đọc file dưới dạng ArrayBuffer để xử lý cả file text và binary
-            reader.readAsArrayBuffer(file);
+            reader.readAsText(file);
         });
 
         document.getElementById('downloadFileBtn').addEventListener('click', function () {
