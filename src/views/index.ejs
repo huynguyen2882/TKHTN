@@ -110,6 +110,14 @@
                     <label for="fileKey" class="form-label">Khóa (16 ký tự):</label>
                     <input type="text" class="form-control" id="fileKey" value="2b7e151628aed2a6" maxlength="16">
                 </div>
+                <div class="mb-3">
+                    <label for="fileKeySize" class="form-label">Chọn độ dài khóa:</label>
+                    <select class="form-select" id="fileKeySize">
+                        <option value="128" selected>128-bit</option>
+                        <option value="192">192-bit</option>
+                        <option value="256">256-bit</option>
+                    </select>
+                </div>
                 <div class="d-flex justify-content-center gap-2">
                     <button id="encryptFileBtn" class="btn btn-primary">Mã hóa</button>
                     <button id="decryptFileBtn" class="btn btn-success">Giải mã</button>
@@ -261,6 +269,7 @@
             }
         }
 
+        
         function keyExpansion(key) {
             const expandedKey = new Array(176).fill(0);
             for (let i = 0; i < 16; i++) {
@@ -476,9 +485,10 @@
                 return;
             }
 
+            const keySize = parseInt(document.getElementById('fileKeySize').value, 10);
             const keyStr = document.getElementById('fileKey').value;
-            if (keyStr.length !== 16) {
-                alert('Khóa phải có đúng 16 ký tự');
+            if (keyStr.length !== keySize / 8) {
+                alert(`Khóa phải có đúng ${keySize / 8} ký tự`);
                 return;
             }
             const key = Array.from(keyStr).map(c => c.charCodeAt(0));
@@ -518,9 +528,10 @@
                 return;
             }
 
+            const keySize = parseInt(document.getElementById('fileKeySize').value, 10);
             const keyStr = document.getElementById('fileKey').value;
-            if (keyStr.length !== 16) {
-                alert('Khóa phải có đúng 16 ký tự');
+            if (keyStr.length !== keySize / 8) {
+                alert(`Khóa phải có đúng ${keySize / 8} ký tự`);
                 return;
             }
             const key = Array.from(keyStr).map(c => c.charCodeAt(0));
