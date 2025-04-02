@@ -494,12 +494,18 @@
                 fileResult = aesEncrypt(inputData, key);
                 const endTime = performance.now();
 
-                // Hiển thị kết quả
-                const hexPreview = fileResult.slice(0, 50).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                // Convert encrypted data to hex
+                const hexResult = fileResult.map(b => b.toString(16).padStart(2, '0')).join(' ');
+
+                // Display results
+                const hexPreview = hexResult.slice(0, 200) + (hexResult.length > 200 ? '...' : '');
                 document.getElementById('fileStatus').textContent = `Đã mã hóa (${fileResult.length} bytes)`;
                 document.getElementById('fileTime').textContent = (endTime - startTime).toFixed(2);
-                document.getElementById('filePreview').textContent = hexPreview + (fileResult.length > 50 ? '...' : '');
+                document.getElementById('filePreview').textContent = hexPreview;
                 document.getElementById('downloadFileBtn').disabled = false;
+
+                // Save hex result for download
+                fileResult = hexResult;
             };
 
             reader.readAsText(file);
@@ -567,11 +573,11 @@
 
             let blob, fileName;
             if (document.getElementById('fileStatus').textContent.includes('mã hóa')) {
-                // Tải file đã mã hóa dưới dạng binary
-                blob = new Blob([new Uint8Array(fileResult)], { type: 'application/octet-stream' });
-                fileName = currentFileName.replace(/\.[^/.]+$/, '') + '.aes';
+                // Save encrypted hex data as a .txt file
+                blob = new Blob([fileResult], { type: 'text/plain' });
+                fileName = currentFileName.replace(/\.[^/.]+$/, '') + '_encrypted.txt';
             } else {
-                // Tải file đã giải mã dưới dạng text
+                // Save decrypted text as a .txt file
                 const text = String.fromCharCode(...fileResult);
                 blob = new Blob([text], { type: 'text/plain' });
                 fileName = currentFileName.replace(/\.[^/.]+$/, '') + '_decrypted.txt';
