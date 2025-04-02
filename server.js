@@ -16,16 +16,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Redirect root route to login page
 app.get('/', (req, res) => {
-    res.redirect('/login');
+    res.redirect('/index');
 });
 
 // Route for the login page
-app.get('/login', (req, res) => {
-    res.render('login'); // Render file login.ejs
+app.get('/index', (req, res) => {
+    res.render('index'); // Render file login.ejs
 });
 
 // Route to handle login form submission
-app.post('/login', (req, res) => {
+app.post('/index', (req, res) => {
     const { username, password } = req.body;
 
     // Example: Check username and password (replace with your own logic)
