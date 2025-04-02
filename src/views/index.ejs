@@ -603,12 +603,12 @@
             let blob, fileName;
             if (document.getElementById('fileStatus').textContent.includes('mã hóa')) {
                 // Save encrypted hex data as a .txt file
-                blob = new Blob([fileResult], { type: 'text/plain' });
+                blob = new Blob([fileResult], { type: 'text/plain;charset=utf-8' });
                 fileName = currentFileName.replace(/\.[^/.]+$/, '') + '_encrypted.txt';
             } else {
-                // Save decrypted text as a .txt file
-                const text = String.fromCharCode(...fileResult);
-                blob = new Blob([text], { type: 'text/plain' });
+                // Save decrypted text as a .txt file with proper UTF-8 encoding
+                const text = utf8BytesToString(fileResult); // Ensure proper decoding
+                blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
                 fileName = currentFileName.replace(/\.[^/.]+$/, '') + '_decrypted.txt';
             }
 
