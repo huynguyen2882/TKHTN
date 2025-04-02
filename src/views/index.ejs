@@ -77,8 +77,8 @@
                     <textarea class="form-control" id="textInput" rows="5"></textarea>
                 </div>
                 <div class="mb-3">
-                    <label for="textKey" class="form-label">Khóa (16 ký tự):</label>
-                    <input type="text" class="form-control" id="textKey" value="2b7e151628aed2a6" maxlength="16">
+                    <label for="textKey" class="form-label">Khóa :</label>
+                    <input type="text" class="form-control" id="textKey" value="2b7e151628aed2a6" maxlength="32">
                 </div>
                 <div class="d-flex justify-content-center gap-2">
                     <button id="encryptTextBtn" class="btn btn-primary">Mã hóa</button>
@@ -107,8 +107,8 @@
                     <div id="fileInfo" class="file-info">Chưa chọn tệp</div>
                 </div>
                 <div class="mb-3">
-                    <label for="fileKey" class="form-label">Khóa (16 ký tự):</label>
-                    <input type="text" class="form-control" id="fileKey" value="2b7e151628aed2a6" maxlength="16">
+                    <label for="fileKey" class="form-label">Khóa :</label>
+                    <input type="text" class="form-control" id="fileKey" value="2b7e151628aed2a6" maxlength="32">
                 </div>
                 <div class="mb-3">
                     <label for="fileKeySize" class="form-label">Chọn độ dài khóa:</label>
@@ -370,6 +370,13 @@
             return unpadData(decryptedData);
         }
 
+        function stringToUtf8Bytes(str) {
+            return new TextEncoder().encode(str);
+        }
+
+        function utf8BytesToString(bytes) {
+            return new TextDecoder().decode(new Uint8Array(bytes));
+        }
 
         // ========== Text Operations ==========
         let textResult = null;
@@ -382,20 +389,20 @@
             }
 
             const keyStr = document.getElementById('textKey').value;
-            if (keyStr.length !== 16) {
-                alert('Khóa phải có đúng 16 ký tự');
+            if (keyStr.length !== 16 && keyStr.length !== 24 && keyStr.length !== 32) {
+                alert('Khóa phải có độ dài 16, 24 hoặc 32 ký tự');
                 return;
             }
             const key = Array.from(keyStr).map(c => c.charCodeAt(0));
 
             const startTime = performance.now();
-            const inputData = Array.from(inputText).map(c => c.charCodeAt(0));
+            const inputData = Array.from(stringToUtf8Bytes(inputText));
             textResult = aesEncrypt(inputData, key);
             const endTime = performance.now();
 
             // Hiển thị kết quả
-            const hexResult = textResult.map(b => b.toString(16).padStart(2, '0')).join(' ');
-            const textOutput = String.fromCharCode(...textResult).replace(/[^\x20-\x7E]/g, '.');
+            const hexResult = textResult.map(b => b.toString(16).padStart(2, '0')).join('');
+            const textOutput = utf8BytesToString(textResult);
 
             document.getElementById('textStatus').textContent = 'Đã mã hóa';
             document.getElementById('textTime').textContent = (endTime - startTime).toFixed(2);
@@ -411,30 +418,29 @@
             }
 
             const keyStr = document.getElementById('textKey').value;
-            if (keyStr.length !== 16) {
-                alert('Khóa phải có đúng 16 ký tự');
+            if (keyStr.length !== 16 && keyStr.length !== 24 && keyStr.length !== 32) {
+                alert('Khóa phải có độ dài 16, 24 hoặc 32 ký tự');
                 return;
             }
             const key = Array.from(keyStr).map(c => c.charCodeAt(0));
 
             try {
                 const startTime = performance.now();
-                // Xử lý input có thể là hex hoặc raw text
                 let inputData;
-                if (/^([0-9a-fA-F]{2}\s*)+$/.test(inputText.trim())) {
+                if (/^([0-9a-fA-F]{2})+$/.test(inputText.trim())) {
                     // Nếu là hex string
-                    inputData = inputText.trim().split(/\s+/).map(b => parseInt(b, 16));
+                    inputData = inputText.trim().match(/.{2}/g).map(b => parseInt(b, 16));
                 } else {
                     // Nếu là raw text
-                    inputData = Array.from(inputText).map(c => c.charCodeAt(0));
+                    inputData = Array.from(stringToUtf8Bytes(inputText));
                 }
 
                 textResult = aesDecrypt(inputData, key);
                 const endTime = performance.now();
 
                 // Hiển thị kết quả
-                const hexResult = textResult.map(b => b.toString(16).padStart(2, '0')).join(' ');
-                const textOutput = String.fromCharCode(...textResult);
+                const hexResult = textResult.map(b => b.toString(16).padStart(2, '0')).join('');
+                const textOutput = utf8BytesToString(textResult);
 
                 document.getElementById('textStatus').textContent = 'Đã giải mã';
                 document.getElementById('textTime').textContent = (endTime - startTime).toFixed(2);
@@ -478,6 +484,14 @@
             reader.readAsText(file);
         });
 
+        function generateRandomKey(length) {
+            const key = [];
+            for (let i = 0; i < length; i++) {
+                key.push(Math.floor(Math.random() * 256)); // Random byte (0-255)
+            }
+            return key;
+        }
+
         document.getElementById('encryptFileBtn').addEventListener('click', function () {
             const fileInput = document.getElementById('fileInput');
             if (!fileInput.files || fileInput.files.length === 0) {
@@ -486,11 +500,15 @@
             }
 
             const keySize = parseInt(document.getElementById('fileKeySize').value, 10);
-            const keyStr = document.getElementById('fileKey').value;
+            let keyStr = document.getElementById('fileKey').value;
+
             if (keyStr.length !== keySize / 8) {
-                alert(`Khóa phải có đúng ${keySize / 8} ký tự`);
-                return;
+                alert(`Khóa không hợp lệ. Tự động tạo khóa ngẫu nhiên ${keySize}-bit.`);
+                const randomKey = generateRandomKey(keySize / 8);
+                keyStr = randomKey.map(byte => String.fromCharCode(byte)).join('');
+                document.getElementById('fileKey').value = keyStr; // Display the generated key
             }
+
             const key = Array.from(keyStr).map(c => c.charCodeAt(0));
 
             const file = fileInput.files[0];
@@ -498,14 +516,14 @@
 
             reader.onload = function (e) {
                 const content = e.target.result;
-                const inputData = Array.from(content).map(c => c.charCodeAt(0));
+                const inputData = Array.from(stringToUtf8Bytes(content));
 
                 const startTime = performance.now();
                 fileResult = aesEncrypt(inputData, key);
                 const endTime = performance.now();
 
                 // Convert encrypted data to hex
-                const hexResult = fileResult.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                const hexResult = fileResult.map(b => b.toString(16).padStart(2, '0')).join('');
 
                 // Display results
                 const hexPreview = hexResult.slice(0, 200) + (hexResult.length > 200 ? '...' : '');
@@ -530,10 +548,12 @@
 
             const keySize = parseInt(document.getElementById('fileKeySize').value, 10);
             const keyStr = document.getElementById('fileKey').value;
+
             if (keyStr.length !== keySize / 8) {
-                alert(`Khóa phải có đúng ${keySize / 8} ký tự`);
+                alert(`Khóa không hợp lệ. Vui lòng nhập đúng khóa ${keySize / 8} ký tự đã sử dụng để mã hóa.`);
                 return;
             }
+
             const key = Array.from(keyStr).map(c => c.charCodeAt(0));
 
             const file = fileInput.files[0];
@@ -545,12 +565,10 @@
 
                     // Detect if the content is hex-encoded
                     let inputData;
-                    if (/^([0-9a-fA-F]{2}\s*)+$/.test(content.trim())) {
-                        inputData = content.trim().split(/\s+/).map(b => parseInt(b, 16));
+                    if (/^([0-9a-fA-F]{2})+$/.test(content.trim())) {
+                        inputData = content.trim().match(/.{2}/g).map(b => parseInt(b, 16));
                     } else {
-                        const arrayBuffer = e.target.result;
-                        const uintArray = new Uint8Array(arrayBuffer);
-                        inputData = Array.from(uintArray);
+                        inputData = Array.from(stringToUtf8Bytes(content));
                     }
 
                     const startTime = performance.now();
@@ -558,7 +576,7 @@
                     const endTime = performance.now();
 
                     // Validate decrypted content
-                    const textPreview = String.fromCharCode(...fileResult.slice(0, 200));
+                    const textPreview = utf8BytesToString(fileResult.slice(0, 200));
                     if (!textPreview.trim()) {
                         throw new Error('Nội dung giải mã không hợp lệ hoặc bị lỗi.');
                     }
